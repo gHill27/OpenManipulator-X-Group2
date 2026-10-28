@@ -40,18 +40,26 @@ errHist = zeros(3, length(t));
 
 %% Simulate differential inverse kinematics controller
 figure;
+% syms q1 q2 q3 q4 real
+% q_sym = [q1,q2,q3,q4];
+% x_sym = openManipulatorPosition(q_sym);
+% J_sym = jacobian(x_sym, q_sym);
+% matlabFunction(J_sym, 'File', 'getJacobian', 'Vars', {q_sym});
 for k = 1:length(t)
     %% Forward Kinematic
     %% Implement this
+   
     x = openManipulatorPosition(q);
     
+
     %% Save data
     qHist(:, k) = q;
     xHist(:, k) = x;
     errHist(:, k) = x_des - x;
     %% Control Law
     %% Implement this
-    qdot = ControLaw();
+    v_des = [0;0;0];
+    qdot = ControLaw(x_des,v_des,x,q, Kp);
     
     %% Integration of the velocities
     q = q + dt*qdot;
@@ -85,9 +93,9 @@ function [pos_vector] = openManipulatorPosition(joint_vector)
     pos_vector = p;
 end
 
-function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos)
-    J = jacob(q);
-    e = desired_pos - curr_pos ;
-    qdot = pinv(J)*(desired_velocity + Kp*e);
+function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, Kp)
+    J = getJacobian(q');
+    e = desired_pos(:) - curr_pos(:) ;
+    qdot = pinv(J)*(desired_velocity(:) + Kp*e);
 
 end
