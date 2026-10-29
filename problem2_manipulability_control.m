@@ -32,6 +32,7 @@ params.ell_e = 0.12;
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
 Kp = 5.0;
+Kbar = 0.5;
 
 qHist = zeros(numel(q), length(t));
 qdotHist = zeros(numel(q), length(t));
@@ -59,7 +60,7 @@ for k = 1:length(t)
     %% Control Law
     %% Implement this
     v_des = [0;0;0];
-    qdot = ControLaw(x_des,v_des,x,q, Kp);
+    qdot = ControLaw(x_des,v_des,x,q, Kp, Kbar);
     
     %% Integration of the velocities
     q = q + dt*qdot;
@@ -76,9 +77,16 @@ for k = 1:length(t)
 end
 
 
-function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, Kp)
+function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, Kp, Kbar)
     J = openManipulatorJacobian(q);
     e = desired_pos(:) - curr_pos(:) ;
-    qdot = pinv(J)*(desired_velocity(:) + Kp*e);
+    primary = pinv(J)*(desired_velocity(:) + Kp*e);
+
+    gradw = openManipulatorwGradient(q);
+    P = (eye(4) - pinv(J) * J);
+
+    secondary = P*Kbar*gradw;
+
+    qdot = primary + secondary;
 
 end
