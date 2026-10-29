@@ -1,5 +1,5 @@
 %% init_libraries.m
-dynamixel_library_path = '/home/gavin-hill/rbe502/OpenManipulator-X-Group2/DynamixelSDK';
+dynamixel_library_path = '/home/tpetry/Documents/WPI/rbe502/OpenManipulator-X-Group2/DynamixelSDK';
 
 if ~isfolder(dynamixel_library_path)
     error('Dynamixel SDK not found at: %s', dynamixel_library_path);
