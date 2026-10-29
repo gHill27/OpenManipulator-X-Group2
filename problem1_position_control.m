@@ -10,12 +10,12 @@ eeName = "end_effector";
 
 %% Time Variables
 dt = 0.05;
-Tfinal = 5;
+Tfinal = 1;
 t = 0:dt:Tfinal;
 
 %% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
 q = [0; 0; 0; 0];
-qFull = homeConfiguration(robot)
+qFull = homeConfiguration(robot);
 qFull(:) = 0;
 
 %% The Joints we can control for position control
@@ -31,7 +31,7 @@ params.ell_e = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
-Kp = 10.0;
+Kp = 8.0;
 
 qHist = zeros(numel(q), length(t));
 qdotHist = zeros(numel(q), length(t));
@@ -40,26 +40,19 @@ errHist = zeros(3, length(t));
 
 %% Simulate differential inverse kinematics controller
 figure;
-% syms q1 q2 q3 q4 real
-% q_sym = [q1,q2,q3,q4];
-% x_sym = openManipulatorPosition(q_sym);
-% J_sym = jacobian(x_sym, q_sym);
-% matlabFunction(J_sym, 'File', 'getJacobian', 'Vars', {q_sym});
 for k = 1:length(t)
-    %% Forward Kinematic
-    %% Implement this
-   
+    %% Forward Kinematics
     x = openManipulatorPosition(q);
-    
+
+    %% Control Law
+    v_des = [0;0;0];
+    qdot = ControLaw(x_des,v_des, x, q, Kp);
 
     %% Save data
     qHist(:, k) = q;
     xHist(:, k) = x;
     errHist(:, k) = x_des - x;
-    %% Control Law
-    %% Implement this
-    v_des = [0;0;0];
-    qdot = ControLaw(x_des,v_des,x,q, Kp);
+    qdotHist(:, k) = qdot;
     
     %% Integration of the velocities
     q = q + dt*qdot;
@@ -74,6 +67,39 @@ for k = 1:length(t)
     grid on;
     drawnow;
 end
+
+%% Plot variables
+figure();
+plot(t, qHist);
+xlabel('Time (s)');
+ylabel('q (rad)');
+title('Joint Positions vs. Time');
+legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+grid on;
+
+figure();
+plot(t, qdotHist);
+xlabel('Time (s)');
+ylabel('qdot (rad/s)');
+title('Joint Velocities vs. Time');
+legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+grid on;
+
+figure();
+plot(t, xHist);
+xlabel('Time (s)');
+ylabel('End-Effector Position (m)');
+title('End-Effector Position vs. Time');
+legend('x', 'y', 'z');
+grid on;
+
+figure();
+errHistNorm = vecnorm(errHist, 2, 1);
+plot(t, errHistNorm);
+xlabel('Time (s)');
+ylabel('Norm of Position Error (m)');
+title('Position Error Norm vs. Time');
+grid on;
 
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, Kp)
     J = openManipulatorJacobian(q);
