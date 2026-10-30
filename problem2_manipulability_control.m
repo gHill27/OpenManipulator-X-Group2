@@ -27,7 +27,7 @@ params.d1 = 0.0595;
 params.a1 = 0.024;
 params.d2 = 0.128;
 params.a2 = 0.124;
-params.ell_e = 0.12;
+params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];
@@ -44,8 +44,8 @@ manipHist = zeros(1, length(t));
 figure;
 for k = 1:length(t)
     %% Forward Kinematics
-    x = openManipulatorPosition(q);
-    J = openManipulatorJacobian(q);
+    x = openManipulatorPosition(q, params);
+    J = openManipulatorJacobian(q, params);
 
     %% Save data
     qHist(:, k) = q;
@@ -56,7 +56,7 @@ for k = 1:length(t)
 
     %% Control Law
     v_des = [0;0;0];
-    qdot = ControLaw(x_des,v_des,x,q, Kp, Kbar);
+    qdot = ControLaw(x_des,v_des,x,q, params, Kp, Kbar);
     qdotHist(:, k) = qdot;
     
     %% Integration of the velocities
@@ -115,12 +115,12 @@ title('Translational Manipulability vs. Time');
 grid on;
 
 
-function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, Kp, Kbar)
-    J = openManipulatorJacobian(q);
+function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, params, Kp, Kbar)
+    J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;
     primary = pinv(J)*(desired_velocity(:) + Kp*e);
 
-    gradw = openManipulatorwGradient(q);
+    gradw = openManipulatorwGradient(q, params);
     P = (eye(4) - pinv(J) * J);
 
     secondary = P*Kbar*gradw;
