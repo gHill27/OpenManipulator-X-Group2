@@ -10,7 +10,7 @@ eeName = "end_effector";
 
 %% Time Variables
 dt = 0.05;
-Tfinal = 0.5;
+Tfinal = 2;
 t = 0:dt:Tfinal;
 
 %% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
@@ -31,8 +31,8 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];
-Kp = 5.0;
-Kbar = 5000.0;
+Kp = 3.0;
+Kbar = 1000.0;
 
 qHist = zeros(numel(q), length(t));
 qdotHist = zeros(numel(q), length(t));
@@ -112,6 +112,7 @@ plot(t, manipHist);
 xlabel('Time (s)');
 ylabel('Translational Manipulability');
 title('Translational Manipulability vs. Time');
+ylim([0.0088, .0112])
 grid on;
 
 
