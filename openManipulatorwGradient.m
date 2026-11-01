@@ -3,10 +3,10 @@ function [gradw] = openManipulatorwGradient(q, params)
     q = q(:);
     n = length(q);
 
-    % 1. Call your existing analytical Jacobian function (3x4)
+    % Call your existing analytical Jacobian function (3x4)
     J = openManipulatorJacobian(q, params);
 
-    % 2. Compute Analytical Hessian Tensor H (3x4x4) where H(:,:,i) = dJ/dq_i
+    % Compute Analytical Hessian Tensor H (3x4x4) where H(:,:,i) = dJ/dq_i
     q1 = q(1); q2 = q(2); q3 = q(3); q4 = q(4);
     a1 = params.a1; a2 = params.a2; d2 = params.d2; le = params.le;
 
@@ -60,7 +60,7 @@ function [gradw] = openManipulatorwGradient(q, params)
                     c1*dr_dq4,   s1*d2r_dq2q4,   s1*d2r_dq3q4,   s1*d2r_dq44;
                             0,      d2z_dq2q4,      d2z_dq3q4,      d2z_dq44 ];
 
-    % 3. Compute Manipulability m = sqrt(det(J * J'))
+    % Compute Manipulability m = sqrt(det(J * J'))
     JJT = J * J';
     det_JJT = det(JJT);
 
@@ -70,12 +70,10 @@ function [gradw] = openManipulatorwGradient(q, params)
     end
 
     m = sqrt(det_JJT);
-
-    % Invert (J * J') with light damping for numerical stability near singularities
-    inv_JJT = (JJT + 1e-6 * eye(3)) \ eye(3);
+    inv_JJT = pinv(JJT);
     vec_inv_JJT = inv_JJT(:); % vec((J*J')^-1) -> 9x1 column vector
 
-    % 4. Evaluate Equation (11) for each joint i
+    % Evaluate Equation (11) for each joint i
     for i = 1:n
         Hi = H(:, :, i);
         J_HiT = J * Hi';
