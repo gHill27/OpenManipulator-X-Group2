@@ -1,25 +1,14 @@
 clc, clear all, close all;
 
-%% Load rigid body tree
-robot = createRigidBodyTree;
-robot.DataFormat = "column";
-robot.Gravity = [0; 0; -9.81];
+%% Robot setup:
+robot = Robot();
+homingtravelTime = 1;
+robot.writeTime(homingtravelTime)
+robot.writeMode('p') %sets it to position command.
+robot.writeJoints([0,0,0,0]) %go home
+pause(1.0)
+robot.writeMode('v') %sets it to velocity command
 
-%% Controller setup
-eeName = "end_effector";
-
-%% Time Variables
-dt = 0.05;
-Tfinal = 2;
-t = 0:dt:Tfinal;
-
-%% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
-q = [0; 0; 0; 0];
-qFull = homeConfiguration(robot);
-qFull(:) = 0;
-
-%% The Joints we can control for position control
-armJointIdx = 1:4;
 
 %% Geometric parameters
 params.a0 = 0.012;
@@ -30,90 +19,84 @@ params.a2 = 0.124;
 params.le = 0.12;
 
 %% Desired Location of the end effector
-x_des = [0.20; 0.20; 0.15];
-Kp = 3.0;
-Kbar = 1000.0;
+x_des = [0.20; 0.20; 0.15];    
+Kp = 1.0;
+Kbar = 1000;
+q = [0; 0; 0; 0];
 
-qHist = zeros(numel(q), length(t));
-qdotHist = zeros(numel(q), length(t));
-xHist = zeros(3, length(t));
-errHist = zeros(3, length(t));
-manipHist = zeros(1, length(t));
+timestamps = zeros(1, 1000);
+qHist = zeros(numel(q), 1000);
+qdotHist = zeros(numel(q), 1000);
+xHist = zeros(3, 1000);
+errHist = zeros(3, 1000);
 
-%% Simulate differential inverse kinematics controller
-figure;
-for k = 1:length(t)
-    %% Forward Kinematics
-    x = openManipulatorPosition(q, params);
-    J = openManipulatorJacobian(q, params);
-
-    %% Save data
-    qHist(:, k) = q;
-    xHist(:, k) = x;
-    errHist(:, k) = x_des - x;
-    manipHist(:, k) = sqrt(det(J*J'));
-
-
-    %% Control Law
-    v_des = [0;0;0];
-    qdot = ControLaw(x_des,v_des,x,q, params, Kp, Kbar);
-    qdotHist(:, k) = qdot;
-    
-    %% Integration of the velocities
-    q = q + dt*qdot;
-    
-    %% Update joints
-    qFull(armJointIdx) = q;
-    show(robot, qFull, "PreservePlot", false, "Frames", "off");
-    hold on;
-    plot3(x_des(1), x_des(2), x_des(3), "ro", "MarkerSize", 8, "LineWidth", 2);
-    hold off;
-    axis([-0.1 0.4 -0.3 0.3 0 0.4]);
-    grid on;
-    drawnow;
+v_des = [0; 0; 0];
+tic; % Start timer
+travelTime = 2.0;
+index = 1; %matlab starts at 1 so keep consistent
+try 
+    while toc < travelTime
+        joint_matrix = robot.getJointsReadings();
+        q = joint_matrix(1,:); % in degrees
+        x = openManipulatorPosition(deg2rad(q'),params);
+        q_dot = ControLaw(x_des,v_des, x, deg2rad(q), params, Kp, Kbar);
+        robot.writeVelocities(rad2deg(q_dot));
+        pause(0.01);
+        
+        % Save data
+        qHist(:, index) = q;
+        xHist(:, index) = x;
+        errHist(:, index) = x_des - x;
+        qdotHist(:, index) = q_dot;
+        timestamps(index) = toc;
+        index = index + 1;
+    end
+    robot.writeVelocities([0; 0; 0; 0])
+catch ME
+    fprintf('error stopping: %s\n', ME.message);
+    robot.writeVelocities([0; 0; 0; 0])
 end
-
-%% Plot variables
-%% Plot variables
-figure();
-plot(t, qHist);
-xlabel('Time (s)');
-ylabel('q (rad)');
-title('Joint Positions vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-grid on;
-
-figure();
-plot(t, qdotHist);
-xlabel('Time (s)');
-ylabel('qdot (rad/s)');
-title('Joint Velocities vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-grid on;
-
-figure();
-plot(t, xHist);
-xlabel('Time (s)');
-ylabel('End-Effector Position (m)');
-title('End-Effector Position vs. Time');
-legend('x', 'y', 'z');
-grid on;
-
-figure();
-errHistNorm = vecnorm(errHist, 2, 1);
-plot(t, errHistNorm);
-xlabel('Time (s)');
-ylabel('Norm of Position Error (m)');
-title('Position Error Norm vs. Time');
-grid on;
-
-figure();
-plot(t, manipHist);
-xlabel('Time (s)');
-ylabel('Translational Manipulability');
-title('Translational Manipulability vs. Time');
-ylim([0.0088, .0112])
-grid on;
+% 
+% %% Plot variables
+% figure();
+% plot(t, qHist);
+% xlabel('Time (s)');
+% ylabel('q (rad)');
+% title('Joint Positions vs. Time');
+% legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+% grid on;
+% 
+% figure();
+% plot(t, qdotHist);
+% xlabel('Time (s)');
+% ylabel('qdot (rad/s)');
+% title('Joint Velocities vs. Time');
+% legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+% grid on;
+% 
+% figure();
+% plot(t, xHist);
+% xlabel('Time (s)');
+% ylabel('End-Effector Position (m)');
+% title('End-Effector Position vs. Time');
+% legend('x', 'y', 'z');
+% grid on;
+% 
+% figure();
+% errHistNorm = vecnorm(errHist, 2, 1);
+% plot(t, errHistNorm);
+% xlabel('Time (s)');
+% ylabel('Norm of Position Error (m)');
+% title('Position Error Norm vs. Time');
+% grid on;
+% 
+% figure();
+% plot(t, manipHist);
+% xlabel('Time (s)');
+% ylabel('Translational Manipulability');
+% title('Translational Manipulability vs. Time');
+% ylim([0.0088, .0112])
+% grid on;
 
 
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, params, Kp, Kbar)
