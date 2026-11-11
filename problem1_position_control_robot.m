@@ -1,5 +1,7 @@
 clc, clear all, close all;
 
+filename = 'Data/problem1.mat';
+
 %% Robot setup:
 robot = Robot();
 homingtravelTime = 1;
@@ -28,27 +30,33 @@ qHist = zeros(numel(q), 1000);
 qdotHist = zeros(numel(q), 1000);
 xHist = zeros(3, 1000);
 errHist = zeros(3, 1000);
+manipHist = zeros(1, 1000);
+real_q_dot_hist = zeros(4, 1000);
 
 v_des = [0; 0; 0];
 tic; % Start timer
-travelTime = 2.0;
+travelTime = 5.0;
 index = 1; %matlab starts at 1 so keep consistent
 try 
     while toc < travelTime
         joint_matrix = robot.getJointsReadings();
+        real_q_dot_hist(:,index) = joint_matrix(2,:);
         q = joint_matrix(1,:); % in degrees
         x = openManipulatorPosition(deg2rad(q'),params);
         q_dot = ControLaw(x_des,v_des, x, deg2rad(q), params, Kp);
         robot.writeVelocities(rad2deg(q_dot));
-        pause(0.01);
         
         % Save data
         qHist(:, index) = q;
         xHist(:, index) = x;
         errHist(:, index) = x_des - x;
         qdotHist(:, index) = q_dot;
+        
+        J = openManipulatorJacobian(deg2rad(q), params);
+        manipHist(:,index) = sqrt(det(J*J'));
         timestamps(index) = toc;
         index = index + 1;
+        pause(0.005);
     end
     robot.writeVelocities([0; 0; 0; 0])
 catch ME
@@ -91,6 +99,15 @@ ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
+figure();
+plot(timestamps(1,1:last_non_zero_index), manipHist(:,1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('Translational Manipulability');
+title('Translational Manipulability vs. Time');
+ylim([0.0078, .0112])
+grid on;
+
+save(filename, "qHist", "qdotHist", "timestamps")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;
