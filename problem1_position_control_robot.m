@@ -58,39 +58,6 @@ end
 
 %% Plot variables
 last_non_zero_index = find(timestamps, 1, 'last');
-figure();
-plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index));
-xlabel('Time (s)');
-ylabel('q (rad)');
-title('Joint Positions vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-grid on;
-
-figure();
-plot(timestamps(1, 1:last_non_zero_index), qdotHist(:, 1:last_non_zero_index));
-xlabel('Time (s)');
-ylabel('qdot (rad/s)');
-title('Joint Velocities vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-grid on;
-
-figure();
-plot(timestamps(1, 1:last_non_zero_index), xHist(:, 1:last_non_zero_index));
-xlabel('Time (s)');
-ylabel('End-Effector Position (m)');
-title('End-Effector Position vs. Time');
-legend('x', 'y', 'z');
-grid on;
-
-figure();
-errHistNorm = vecnorm(errHist, 2, 1);
-plot(timestamps(1, 1:last_non_zero_index), errHistNorm(:, 1:last_non_zero_index));
-xlabel('Time (s)');
-ylabel('Norm of Position Error (m)');
-title('Position Error Norm vs. Time');
-grid on;
-%% Plot variables
-last_non_zero_index = find(timestamps, 1, 'last');
 figure('Name', 'Controller Results');
 subplot(2,2,1);
 plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index));

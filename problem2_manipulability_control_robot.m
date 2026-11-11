@@ -29,6 +29,7 @@ qHist = zeros(numel(q), 1000);
 qdotHist = zeros(numel(q), 1000);
 xHist = zeros(3, 1000);
 errHist = zeros(3, 1000);
+manipHist = zeros(1, 1000);
 
 v_des = [0; 0; 0];
 tic; % Start timer
@@ -48,6 +49,8 @@ try
         xHist(:, index) = x;
         errHist(:, index) = x_des - x;
         qdotHist(:, index) = q_dot;
+        J = openManipulatorJacobian(deg2rad(q), params);
+        manipHist(:,index) = sqrt(det(J*J'));
         timestamps(index) = toc;
         index = index + 1;
     end
@@ -57,46 +60,48 @@ catch ME
     robot.writeVelocities([0; 0; 0; 0])
 end
 % 
-% %% Plot variables
-% figure();
-% plot(t, qHist);
-% xlabel('Time (s)');
-% ylabel('q (rad)');
-% title('Joint Positions vs. Time');
-% legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-% grid on;
-% 
-% figure();
-% plot(t, qdotHist);
-% xlabel('Time (s)');
-% ylabel('qdot (rad/s)');
-% title('Joint Velocities vs. Time');
-% legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
-% grid on;
-% 
-% figure();
-% plot(t, xHist);
-% xlabel('Time (s)');
-% ylabel('End-Effector Position (m)');
-% title('End-Effector Position vs. Time');
-% legend('x', 'y', 'z');
-% grid on;
-% 
-% figure();
-% errHistNorm = vecnorm(errHist, 2, 1);
-% plot(t, errHistNorm);
-% xlabel('Time (s)');
-% ylabel('Norm of Position Error (m)');
-% title('Position Error Norm vs. Time');
-% grid on;
-% 
-% figure();
-% plot(t, manipHist);
-% xlabel('Time (s)');
-% ylabel('Translational Manipulability');
-% title('Translational Manipulability vs. Time');
-% ylim([0.0088, .0112])
-% grid on;
+%% Plot variables
+last_non_zero_index = find(timestamps, 1, 'last');
+figure('Name', 'Controller Results');
+subplot(2,2,1);
+plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('q (rad)');
+title('Joint Positions vs. Time');
+legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+grid on;
+
+subplot(2,2,2);
+plot(timestamps(1, 1:last_non_zero_index), qdotHist(:, 1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('qdot (rad/s)');
+title('Joint Velocities vs. Time');
+legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+grid on;
+
+subplot(2,2,3);
+plot(timestamps(1, 1:last_non_zero_index), xHist(:, 1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('End-Effector Position (m)');
+title('End-Effector Position vs. Time');
+legend('x', 'y', 'z');
+grid on;
+
+subplot(2,2,4);
+errHistNorm = vecnorm(errHist, 2, 1);
+plot(timestamps(1, 1:last_non_zero_index), errHistNorm(:, 1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('Norm of Position Error (m)');
+title('Position Error Norm vs. Time');
+grid on;
+
+figure();
+plot(timestamps(1,1:last_non_zero_index), manipHist(:,1:last_non_zero_index));
+xlabel('Time (s)');
+ylabel('Translational Manipulability');
+title('Translational Manipulability vs. Time');
+ylim([0.0088, .0112])
+grid on;
 
 
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, params, Kp, Kbar)
