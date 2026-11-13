@@ -1,5 +1,5 @@
 clc, clear all, close all;
-
+filename = 'Data/problem1sym.mat';
 %% Load rigid body tree
 robot = createRigidBodyTree;
 robot.DataFormat = "column";
@@ -10,7 +10,7 @@ eeName = "end_effector";
 
 %% Time Variables
 dt = 0.05;
-Tfinal = 2;
+Tfinal = 5;
 t = 0:dt:Tfinal;
 
 %% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
@@ -31,10 +31,10 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
-Kp = 3.0;
+Kp = 1.0;
 
 qHist = zeros(numel(q), length(t));
-qdotHist = zeros(numel(q), length(t));
+symQdotHist = zeros(numel(q), length(t));
 xHist = zeros(3, length(t));
 errHist = zeros(3, length(t));
 
@@ -52,7 +52,7 @@ for k = 1:length(t)
     qHist(:, k) = q;
     xHist(:, k) = x;
     errHist(:, k) = x_des - x;
-    qdotHist(:, k) = qdot;
+    symQdotHist(:, k) = qdot;
     
     %% Integration of the velocities
     q = q + dt*qdot;
@@ -78,7 +78,7 @@ legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
 grid on;
 
 figure();
-plot(t, qdotHist);
+plot(t, symQdotHist);
 xlabel('Time (s)');
 ylabel('qdot (rad/s)');
 title('Joint Velocities vs. Time');
@@ -101,6 +101,7 @@ ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
+save(filename, "qHist", "symQdotHist", "t")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;

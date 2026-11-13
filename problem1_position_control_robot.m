@@ -1,6 +1,7 @@
 clc, clear all, close all;
 
 filename = 'Data/problem1.mat';
+load('Data/problem1sym.mat');
 
 %% Robot setup:
 robot = Robot();
@@ -40,7 +41,7 @@ index = 1; %matlab starts at 1 so keep consistent
 try 
     while toc < travelTime
         joint_matrix = robot.getJointsReadings();
-        real_q_dot_hist(:,index) = joint_matrix(2,:);
+        real_q_dot_hist(:,index) = deg2rad(joint_matrix(2,:));
         q = joint_matrix(1,:); % in degrees
         x = openManipulatorPosition(deg2rad(q'),params);
         q_dot = ControLaw(x_des,v_des, x, deg2rad(q), params, Kp);
@@ -65,6 +66,13 @@ catch ME
 end
 
 %% Plot variables
+
+if width(timestamps(1,1:last_non_zero_index)) > width(symQdotHist)
+    shortest = width(symQdotHist);
+else
+    shortest = width(timestamps(1,1:last_non_zero_index));
+end
+
 last_non_zero_index = find(timestamps, 1, 'last');
 figure('Name', 'Controller Results');
 subplot(2,2,1);
@@ -99,6 +107,48 @@ ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
+
+
+
+allvdot = [qdotHist(:,1:last_non_zero_index); real_q_dot_hist(:,1:last_non_zero_index)];
+plot1 = [allvdot(1,1:shortest); allvdot(5,1:shortest); symQdotHist(1,1:shortest)];
+plot2 = [allvdot(2,1:shortest); allvdot(6,1:shortest); symQdotHist(2,1:shortest)];
+plot3 = [allvdot(3,1:shortest); allvdot(7,1:shortest); symQdotHist(3,1:shortest)];
+plot4 = [allvdot(4,1:shortest); allvdot(8,1:shortest); symQdotHist(4,1:shortest)];
+
+figure();
+subplot(2,2,1);
+plot(timestamps(1,1:shortest), plot1);
+xlabel('Time (s)');
+ylabel('Qdot Angular Velocity');
+title('Joint 1 Real and Controller Qdot vs. Time');
+legend('controller', 'real', 'sim');
+grid on;
+
+subplot(2,2,2);
+plot(timestamps(1,1:shortest), plot2);
+xlabel('Time (s)');
+ylabel('Qdot Angular Velocity');
+title('Joint 2 Real and Controller Qdot vs. Time');
+legend('controller', 'real', 'sim');
+grid on;
+
+subplot(2,2,3);
+plot(timestamps(1,1:shortest), plot3);
+xlabel('Time (s)');
+ylabel('Qdot Angular Velocity');
+title('Joint 3 Real and Controller Qdot vs. Time');
+legend('controller', 'real', 'sim');
+grid on;
+
+subplot(2,2,4);
+plot(timestamps(1,1:shortest), plot4);
+xlabel('Time (s)');
+ylabel('Qdot Angular Velocity');
+title('Joint 4 Real and Controller Qdot vs. Time');
+legend('controller', 'real', 'sim');
+grid on;
+
 figure();
 plot(timestamps(1,1:last_non_zero_index), manipHist(:,1:last_non_zero_index));
 xlabel('Time (s)');
@@ -107,7 +157,7 @@ title('Translational Manipulability vs. Time');
 ylim([0.0078, .0112])
 grid on;
 
-save(filename, "qHist", "qdotHist", "timestamps")
+save(filename, "qHist", "qdotHist","real_q_dot_hist", "timestamps")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;
