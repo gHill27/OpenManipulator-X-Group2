@@ -34,11 +34,11 @@ x_des = [0.20; 0.20; 0.15];
 Kp = 1.0;
 Kbar = 1000.0;
 
-symQHist = zeros(numel(q), length(t));
+symqHist = zeros(numel(q), length(t));
 symQdotHist = zeros(numel(q), length(t));
-xHist = zeros(3, length(t));
-errHist = zeros(3, length(t));
-manipHist = zeros(1, length(t));
+symxHist = zeros(3, length(t));
+symerrHist = zeros(3, length(t));
+symmanipHist = zeros(1, length(t));
 
 %% Simulate differential inverse kinematics controller
 figure;
@@ -48,10 +48,10 @@ for k = 1:length(t)
     J = openManipulatorJacobian(q, params);
 
     %% Save data
-    symQHist(:, k) = q;
-    xHist(:, k) = x;
-    errHist(:, k) = x_des - x;
-    manipHist(:, k) = sqrt(det(J*J'));
+    symqHist(:, k) = q;
+    symxHist(:, k) = x;
+    symerrHist(:, k) = x_des - x;
+    symmanipHist(:, k) = sqrt(det(J*J'));
 
 
     %% Control Law
@@ -76,7 +76,7 @@ end
 %% Plot variables
 %% Plot variables
 figure();
-plot(t, symQHist);
+plot(t, symqHist);
 xlabel('Time (s)');
 ylabel('q (rad)');
 title('Joint Positions vs. Time');
@@ -92,7 +92,7 @@ legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
 grid on;
 
 figure();
-plot(t, xHist);
+plot(t, symxHist);
 xlabel('Time (s)');
 ylabel('End-Effector Position (m)');
 title('End-Effector Position vs. Time');
@@ -100,15 +100,15 @@ legend('x', 'y', 'z');
 grid on;
 
 figure();
-errHistNorm = vecnorm(errHist, 2, 1);
-plot(t, errHistNorm);
+symerrHistNorm = vecnorm(symerrHist, 2, 1);
+plot(t, symerrHistNorm);
 xlabel('Time (s)');
 ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
 figure();
-plot(t, manipHist);
+plot(t, symmanipHist);
 xlabel('Time (s)');
 ylabel('Translational Manipulability');
 title('Translational Manipulability vs. Time');
@@ -116,7 +116,7 @@ ylim([0.0088, .0112])
 grid on;
 
 
-save(filename, "symQHist", "symQdotHist", "t")
+save(filename, "symqHist", "symQdotHist", "symerrHistNorm", "symxHist", "symerrHist", "symmanipHist","t")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos,q, params, Kp, Kbar)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;

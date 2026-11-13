@@ -33,10 +33,10 @@ params.le = 0.12;
 x_des = [0.20; 0.20; 0.15];    
 Kp = 1.0;
 
-qHist = zeros(numel(q), length(t));
+symqHist = zeros(numel(q), length(t));
 symQdotHist = zeros(numel(q), length(t));
-xHist = zeros(3, length(t));
-errHist = zeros(3, length(t));
+symxHist = zeros(3, length(t));
+symerrHist = zeros(3, length(t));
 
 %% Simulate differential inverse kinematics controller
 figure;
@@ -49,9 +49,9 @@ for k = 1:length(t)
     qdot = ControLaw(x_des,v_des, x, q, params, Kp);
 
     %% Save data
-    qHist(:, k) = q;
-    xHist(:, k) = x;
-    errHist(:, k) = x_des - x;
+    symqHist(:, k) = q;
+    symxHist(:, k) = x;
+    symerrHist(:, k) = x_des - x;
     symQdotHist(:, k) = qdot;
     
     %% Integration of the velocities
@@ -70,7 +70,7 @@ end
 
 %% Plot variables
 figure();
-plot(t, qHist);
+plot(t, symqHist);
 xlabel('Time (s)');
 ylabel('q (rad)');
 title('Joint Positions vs. Time');
@@ -86,7 +86,7 @@ legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
 grid on;
 
 figure();
-plot(t, xHist);
+plot(t, symxHist);
 xlabel('Time (s)');
 ylabel('End-Effector Position (m)');
 title('End-Effector Position vs. Time');
@@ -94,14 +94,14 @@ legend('x', 'y', 'z');
 grid on;
 
 figure();
-errHistNorm = vecnorm(errHist, 2, 1);
-plot(t, errHistNorm);
+symerrHistNorm = vecnorm(symerrHist, 2, 1);
+plot(t, symerrHistNorm);
 xlabel('Time (s)');
 ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
-save(filename, "qHist", "symQdotHist", "t")
+save(filename, "symqHist", "symQdotHist", "symerrHistNorm", "symxHist", "symerrHist", "t")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;

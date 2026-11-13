@@ -48,7 +48,7 @@ try
         robot.writeVelocities(rad2deg(q_dot));
         
         % Save data
-        qHist(:, index) = q;
+        qHist(:, index) = deg2rad(q);
         xHist(:, index) = x;
         errHist(:, index) = x_des - x;
         qdotHist(:, index) = q_dot;
@@ -66,98 +66,133 @@ catch ME
 end
 
 %% Plot variables
+last_non_zero_index = find(timestamps, 1, 'last');
 
-if width(timestamps(1,1:last_non_zero_index)) > width(symQdotHist)
+% Use the cleaner logic to find the shortest array length
+if last_non_zero_index > width(symQdotHist)
     shortest = width(symQdotHist);
 else
-    shortest = width(timestamps(1,1:last_non_zero_index));
+    shortest = last_non_zero_index;
 end
 
-last_non_zero_index = find(timestamps, 1, 'last');
 figure('Name', 'Controller Results');
+
+% Subplot 1: Joint Positions
 subplot(2,2,1);
-plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index));
+plot(timestamps(1, 1:shortest), qHist(:, 1:shortest), 'LineWidth', 1.5);
+hold on;
+ax = gca; ax.ColorOrderIndex = 1; % Resets color order so sim matches real colors
+plot(timestamps(1, 1:shortest), symqHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('q (rad)');
 title('Joint Positions vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+legend('q1 real', 'q2 real', 'q3 real', 'q4 real', 'q1 sim', 'q2 sim', 'q3 sim', 'q4 sim');
 grid on;
 
+% Subplot 2: Joint Velocities
 subplot(2,2,2);
-plot(timestamps(1, 1:last_non_zero_index), qdotHist(:, 1:last_non_zero_index));
+plot(timestamps(1, 1:shortest), qdotHist(:, 1:shortest), 'LineWidth', 1.5);
+hold on;
+ax = gca; ax.ColorOrderIndex = 1;
+plot(timestamps(1, 1:shortest), symQdotHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('qdot (rad/s)');
 title('Joint Velocities vs. Time');
-legend('Joint 1', 'Joint 2', 'Joint 3', 'Joint 4');
+legend('qdot1 ctrl', 'qdot2 ctrl', 'qdot3 ctrl', 'qdot4 ctrl', 'qdot1 sim', 'qdot2 sim', 'qdot3 sim', 'qdot4 sim');
 grid on;
 
+% Subplot 3: End-Effector Position
 subplot(2,2,3);
-plot(timestamps(1, 1:last_non_zero_index), xHist(:, 1:last_non_zero_index));
+plot(timestamps(1, 1:shortest), xHist(:, 1:shortest), 'LineWidth', 1.5);
+hold on;
+ax = gca; ax.ColorOrderIndex = 1;
+plot(timestamps(1, 1:shortest), symxHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('End-Effector Position (m)');
 title('End-Effector Position vs. Time');
-legend('x', 'y', 'z');
+legend('x real', 'y real', 'z real', 'x sim', 'y sim', 'z sim');
 grid on;
 
+% Subplot 4: Position Error Norm
 subplot(2,2,4);
 errHistNorm = vecnorm(errHist, 2, 1);
-plot(timestamps(1, 1:last_non_zero_index), errHistNorm(:, 1:last_non_zero_index));
+symErrHistNorm = vecnorm(symerrHist, 2, 1);
+plot(timestamps(1, 1:shortest), errHistNorm(:, 1:shortest), 'LineWidth', 1.5);
+hold on;
+ax = gca; ax.ColorOrderIndex = 1;
+plot(timestamps(1, 1:shortest), symErrHistNorm(:, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
+legend('Real Error', 'Sim Error');
 grid on;
 
-
-
-
-allvdot = [qdotHist(:,1:last_non_zero_index); real_q_dot_hist(:,1:last_non_zero_index)];
-plot1 = [allvdot(1,1:shortest); allvdot(5,1:shortest); symQdotHist(1,1:shortest)];
-plot2 = [allvdot(2,1:shortest); allvdot(6,1:shortest); symQdotHist(2,1:shortest)];
-plot3 = [allvdot(3,1:shortest); allvdot(7,1:shortest); symQdotHist(3,1:shortest)];
-plot4 = [allvdot(4,1:shortest); allvdot(8,1:shortest); symQdotHist(4,1:shortest)];
-
 figure();
+
+% Joint 1
 subplot(2,2,1);
-plot(timestamps(1,1:shortest), plot1);
+plot(timestamps(1,1:shortest), qdotHist(1, 1:shortest), 'LineWidth', 1.5); % controller
+hold on;
+plot(timestamps(1,1:shortest), real_q_dot_hist(1, 1:shortest), 'LineWidth', 1.5); % real
+plot(timestamps(1,1:shortest), symQdotHist(1, 1:shortest), ':', 'LineWidth', 1.5); % sim
+hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
 title('Joint 1 Real and Controller Qdot vs. Time');
 legend('controller', 'real', 'sim');
 grid on;
 
+% Joint 2
 subplot(2,2,2);
-plot(timestamps(1,1:shortest), plot2);
+plot(timestamps(1,1:shortest), qdotHist(2, 1:shortest), 'LineWidth', 1.5);
+hold on;
+plot(timestamps(1,1:shortest), real_q_dot_hist(2, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:shortest), symQdotHist(2, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
 title('Joint 2 Real and Controller Qdot vs. Time');
 legend('controller', 'real', 'sim');
 grid on;
 
+% Joint 3
 subplot(2,2,3);
-plot(timestamps(1,1:shortest), plot3);
+plot(timestamps(1,1:shortest), qdotHist(3, 1:shortest), 'LineWidth', 1.5);
+hold on;
+plot(timestamps(1,1:shortest), real_q_dot_hist(3, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:shortest), symQdotHist(3, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
 title('Joint 3 Real and Controller Qdot vs. Time');
 legend('controller', 'real', 'sim');
 grid on;
 
+% Joint 4
 subplot(2,2,4);
-plot(timestamps(1,1:shortest), plot4);
+plot(timestamps(1,1:shortest), qdotHist(4, 1:shortest), 'LineWidth', 1.5);
+hold on;
+plot(timestamps(1,1:shortest), real_q_dot_hist(4, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:shortest), symQdotHist(4, 1:shortest), ':', 'LineWidth', 1.5);
+hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
 title('Joint 4 Real and Controller Qdot vs. Time');
 legend('controller', 'real', 'sim');
 grid on;
 
-figure();
-plot(timestamps(1,1:last_non_zero_index), manipHist(:,1:last_non_zero_index));
-xlabel('Time (s)');
-ylabel('Translational Manipulability');
-title('Translational Manipulability vs. Time');
-ylim([0.0078, .0112])
-grid on;
-
-save(filename, "qHist", "qdotHist","real_q_dot_hist", "timestamps")
+% figure();
+% plot(timestamps(1,1:shortest), manipHist(:, 1:shortest), 'LineWidth', 1.5);
+% hold on;
+% ax = gca; ax.ColorOrderIndex = 1;
+% plot(timestamps(1,1:shortest), symManipHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+% hold off;
+% xlabel('Time (s)');
+% ylabel('Translational Manipul
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;
