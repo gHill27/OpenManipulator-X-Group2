@@ -185,14 +185,7 @@ title('Joint 4 Real and Controller Qdot vs. Time');
 legend('controller', 'real', 'sim');
 grid on;
 
-% figure();
-% plot(timestamps(1,1:shortest), manipHist(:, 1:shortest), 'LineWidth', 1.5);
-% hold on;
-% ax = gca; ax.ColorOrderIndex = 1;
-% plot(timestamps(1,1:shortest), symManipHist(:, 1:shortest), ':', 'LineWidth', 1.5);
-% hold off;
-% xlabel('Time (s)');
-% ylabel('Translational Manipul
+save(filename, "qHist", "qdotHist", "real_q_dot_hist", "timestamps")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:) ;

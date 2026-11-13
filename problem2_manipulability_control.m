@@ -74,7 +74,6 @@ for k = 1:length(t)
 end
 
 %% Plot variables
-%% Plot variables
 figure();
 plot(t, symqHist);
 xlabel('Time (s)');
