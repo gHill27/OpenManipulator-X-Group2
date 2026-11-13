@@ -10,7 +10,7 @@ eeName = "end_effector";
 
 %% Time Variables
 dt = 0.05;
-Tfinal = 5;
+Tfinal = 10;
 t = 0:dt:Tfinal;
 
 %% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
@@ -31,8 +31,8 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];
-Kp = 1.0;
-Kbar = 1000.0;
+Kp = 0.75;
+Kbar = 500.0;
 
 symqHist = zeros(numel(q), length(t));
 symQdotHist = zeros(numel(q), length(t));

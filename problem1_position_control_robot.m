@@ -5,12 +5,14 @@ load('Data/problem1sym.mat');
 
 %% Robot setup:
 robot = Robot();
-homingtravelTime = 1;
+homingtravelTime = 2;
 robot.writeTime(homingtravelTime)
 robot.writeMode('p') %sets it to position command.
 robot.writeJoints([0,0,0,0]) %go home
-pause(1.0)
+pause(2.0)
 robot.writeMode('v') %sets it to velocity command
+robot.writeVelocities([0; 0; 0; 0]);
+pause(0.15);
 
 
 %% Geometric parameters
@@ -36,53 +38,50 @@ real_q_dot_hist = zeros(4, 1000);
 
 v_des = [0; 0; 0];
 tic; % Start timer
-travelTime = 5.0;
+travelTime = 10.0;
 index = 1; %matlab starts at 1 so keep consistent
+
 try 
     while toc < travelTime
+        timestamps(index) = toc;
+
         joint_matrix = robot.getJointsReadings();
         real_q_dot_hist(:,index) = deg2rad(joint_matrix(2,:));
-        q = joint_matrix(1,:); % in degrees
-        x = openManipulatorPosition(deg2rad(q'),params);
-        q_dot = ControLaw(x_des,v_des, x, deg2rad(q), params, Kp);
+        q = deg2rad(joint_matrix(1,:));
+        x = openManipulatorPosition(q, params);
+        J = openManipulatorJacobian(q, params);
+        
+        q_dot = ControLaw(x_des,v_des, x, q, params, Kp);
         robot.writeVelocities(rad2deg(q_dot));
         
         % Save data
-        qHist(:, index) = deg2rad(q);
+        qHist(:, index) = q;
         xHist(:, index) = x;
         errHist(:, index) = x_des - x;
         qdotHist(:, index) = q_dot;
         
-        J = openManipulatorJacobian(deg2rad(q), params);
         manipHist(:,index) = sqrt(det(J*J'));
-        timestamps(index) = toc;
+
         index = index + 1;
-        pause(0.005);
+        pause(.05);
     end
-    robot.writeVelocities([0; 0; 0; 0])
+    robot.writeVelocities([0; 0; 0; 0]);
 catch ME
     fprintf('error stopping: %s\n', ME.message);
-    robot.writeVelocities([0; 0; 0; 0])
+    robot.writeVelocities([0; 0; 0; 0]);
 end
 
 %% Plot variables
 last_non_zero_index = find(timestamps, 1, 'last');
 
-% Use the cleaner logic to find the shortest array length
-if last_non_zero_index > width(symQdotHist)
-    shortest = width(symQdotHist);
-else
-    shortest = last_non_zero_index;
-end
-
 figure('Name', 'Controller Results');
 
 % Subplot 1: Joint Positions
 subplot(2,2,1);
-plot(timestamps(1, 1:shortest), qHist(:, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
 ax = gca; ax.ColorOrderIndex = 1; % Resets color order so sim matches real colors
-plot(timestamps(1, 1:shortest), symqHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+plot(t, symqHist, ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('q (rad)');
@@ -92,10 +91,10 @@ grid on;
 
 % Subplot 2: Joint Velocities
 subplot(2,2,2);
-plot(timestamps(1, 1:shortest), qdotHist(:, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1, 1:last_non_zero_index), qdotHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
 ax = gca; ax.ColorOrderIndex = 1;
-plot(timestamps(1, 1:shortest), symQdotHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+plot(t, symQdotHist, ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('qdot (rad/s)');
@@ -105,10 +104,10 @@ grid on;
 
 % Subplot 3: End-Effector Position
 subplot(2,2,3);
-plot(timestamps(1, 1:shortest), xHist(:, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1, 1:last_non_zero_index), xHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
 ax = gca; ax.ColorOrderIndex = 1;
-plot(timestamps(1, 1:shortest), symxHist(:, 1:shortest), ':', 'LineWidth', 1.5);
+plot(t, symxHist, ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('End-Effector Position (m)');
@@ -120,10 +119,10 @@ grid on;
 subplot(2,2,4);
 errHistNorm = vecnorm(errHist, 2, 1);
 symErrHistNorm = vecnorm(symerrHist, 2, 1);
-plot(timestamps(1, 1:shortest), errHistNorm(:, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1, 1:last_non_zero_index), errHistNorm(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
 ax = gca; ax.ColorOrderIndex = 1;
-plot(timestamps(1, 1:shortest), symErrHistNorm(:, 1:shortest), ':', 'LineWidth', 1.5);
+plot(t, symErrHistNorm, ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('Norm of Position Error (m)');
@@ -135,10 +134,10 @@ figure();
 
 % Joint 1
 subplot(2,2,1);
-plot(timestamps(1,1:shortest), qdotHist(1, 1:shortest), 'LineWidth', 1.5); % controller
+plot(timestamps(1,1:last_non_zero_index), qdotHist(1, 1:last_non_zero_index), 'LineWidth', 1.5); % controller
 hold on;
-plot(timestamps(1,1:shortest), real_q_dot_hist(1, 1:shortest), 'LineWidth', 1.5); % real
-plot(timestamps(1,1:shortest), symQdotHist(1, 1:shortest), ':', 'LineWidth', 1.5); % sim
+plot(timestamps(1,1:last_non_zero_index), real_q_dot_hist(1, 1:last_non_zero_index), 'LineWidth', 1.5); % real
+plot(t, symQdotHist(1, :), ':', 'LineWidth', 1.5); % sim
 hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
@@ -148,10 +147,10 @@ grid on;
 
 % Joint 2
 subplot(2,2,2);
-plot(timestamps(1,1:shortest), qdotHist(2, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), qdotHist(2, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
-plot(timestamps(1,1:shortest), real_q_dot_hist(2, 1:shortest), 'LineWidth', 1.5);
-plot(timestamps(1,1:shortest), symQdotHist(2, 1:shortest), ':', 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), real_q_dot_hist(2, 1:last_non_zero_index), 'LineWidth', 1.5);
+plot(t, symQdotHist(2, :), ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
@@ -161,10 +160,10 @@ grid on;
 
 % Joint 3
 subplot(2,2,3);
-plot(timestamps(1,1:shortest), qdotHist(3, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), qdotHist(3, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
-plot(timestamps(1,1:shortest), real_q_dot_hist(3, 1:shortest), 'LineWidth', 1.5);
-plot(timestamps(1,1:shortest), symQdotHist(3, 1:shortest), ':', 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), real_q_dot_hist(3, 1:last_non_zero_index), 'LineWidth', 1.5);
+plot(t, symQdotHist(3, :), ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');
@@ -174,10 +173,10 @@ grid on;
 
 % Joint 4
 subplot(2,2,4);
-plot(timestamps(1,1:shortest), qdotHist(4, 1:shortest), 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), qdotHist(4, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
-plot(timestamps(1,1:shortest), real_q_dot_hist(4, 1:shortest), 'LineWidth', 1.5);
-plot(timestamps(1,1:shortest), symQdotHist(4, 1:shortest), ':', 'LineWidth', 1.5);
+plot(timestamps(1,1:last_non_zero_index), real_q_dot_hist(4, 1:last_non_zero_index), 'LineWidth', 1.5);
+plot(t, symQdotHist(4, :), ':', 'LineWidth', 1.5);
 hold off;
 xlabel('Time (s)');
 ylabel('Qdot Angular Velocity');

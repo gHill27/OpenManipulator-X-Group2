@@ -10,7 +10,7 @@ eeName = "end_effector";
 
 %% Time Variables
 dt = 0.05;
-Tfinal = 5;
+Tfinal = 10;
 t = 0:dt:Tfinal;
 
 %% The URDF has 6 movable joints: 4 arm joints + 2 gripper joints.
@@ -31,7 +31,7 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
-Kp = 1.0;
+Kp = 0.75;
 
 symqHist = zeros(numel(q), length(t));
 symQdotHist = zeros(numel(q), length(t));
@@ -104,7 +104,7 @@ grid on;
 save(filename, "symqHist", "symQdotHist", "symerrHistNorm", "symxHist", "symerrHist", "t")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
-    e = desired_pos(:) - curr_pos(:) ;
+    e = desired_pos(:) - curr_pos(:);
     qdot = pinv(J)*(desired_velocity(:) + Kp*e);
 
 end

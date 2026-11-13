@@ -7,11 +7,11 @@ load('Data/problem2sym.mat');
 
 %% Robot setup:
 robot = Robot();
-homingtravelTime = 1;
+homingtravelTime = 2;
 robot.writeTime(homingtravelTime)
 robot.writeMode('p') %sets it to position command.
 robot.writeJoints([0,0,0,0]) %go home
-pause(1.0)
+pause(2.0)
 robot.writeMode('v') %sets it to velocity command
 
 %% Geometric parameters
@@ -24,8 +24,8 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
-Kp = 1.0;
-Kbar = 1000;
+Kp = 0.75;
+Kbar = 500;
 q = [0; 0; 0; 0];
 
 timestamps = zeros(1, 1000);
@@ -38,8 +38,9 @@ real_q_dot_hist = zeros(4, 1000);
 
 v_des = [0; 0; 0];
 tic; % Start timer
-travelTime = 5.0;
+travelTime = 10.0;
 index = 1; %matlab starts at 1 so keep consistent
+
 try 
     while toc < travelTime
         joint_matrix = robot.getJointsReadings();
@@ -58,14 +59,15 @@ try
         manipHist(:,index) = sqrt(det(J*J'));
         timestamps(index) = toc;
         index = index + 1;
-        pause(0.005);
+
     end
     robot.writeVelocities([0; 0; 0; 0])
 catch ME
     fprintf('error stopping: %s\n', ME.message);
     robot.writeVelocities([0; 0; 0; 0])
 end
-% 
+
+
 %% Plot variables
 last_non_zero_index = find(timestamps, 1, 'last');
 
