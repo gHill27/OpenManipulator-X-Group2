@@ -31,18 +31,20 @@ params.le = 0.12;
 
 %% Desired Location of the end effector
 x_des = [0.20; 0.20; 0.15];    
-Kp = 0.75;
+Kp = 1.0;
 
 symqHist = zeros(numel(q), length(t));
 symQdotHist = zeros(numel(q), length(t));
 symxHist = zeros(3, length(t));
 symerrHist = zeros(3, length(t));
+symmanipHist = zeros(1, length(t));
 
 %% Simulate differential inverse kinematics controller
 figure;
 for k = 1:length(t)
     %% Forward Kinematics
     x = openManipulatorPosition(q, params);
+    J = openManipulatorJacobian(q, params);
 
     %% Control Law
     v_des = [0;0;0];
@@ -53,6 +55,7 @@ for k = 1:length(t)
     symxHist(:, k) = x;
     symerrHist(:, k) = x_des - x;
     symQdotHist(:, k) = qdot;
+    symmanipHist(:, k) = sqrt(det(J*J'));
     
     %% Integration of the velocities
     q = q + dt*qdot;
@@ -101,7 +104,7 @@ ylabel('Norm of Position Error (m)');
 title('Position Error Norm vs. Time');
 grid on;
 
-save(filename, "symqHist", "symQdotHist", "symerrHistNorm", "symxHist", "symerrHist", "t")
+save(filename, "symqHist", "symQdotHist", "symerrHistNorm", "symxHist", "symerrHist", "symmanipHist", "t")
 function [qdot] = ControLaw(desired_pos,desired_velocity,curr_pos, q, params, Kp)
     J = openManipulatorJacobian(q, params);
     e = desired_pos(:) - curr_pos(:);
