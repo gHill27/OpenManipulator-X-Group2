@@ -14,7 +14,6 @@ robot.writeMode('v') %sets it to velocity command
 robot.writeVelocities([0; 0; 0; 0]);
 pause(0.15);
 
-
 %% Geometric parameters
 params.a0 = 0.012;
 params.d1 = 0.0595;
@@ -73,9 +72,7 @@ end
 %% Plot variables
 last_non_zero_index = find(timestamps, 1, 'last');
 
-
-
-% Subplot 1: Joint Positions
+% Joint Positions
 figure();
 plot(timestamps(1, 1:last_non_zero_index), qHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
@@ -88,20 +85,7 @@ title('Joint Positions vs. Time');
 legend('Real q1', 'Real q2', 'Real q3', 'Real q4', 'Sim q1', 'Sim q2', 'Sim q3', 'Sim q4');
 grid on;
 
-% % Subplot 2: Joint Velocities
-% subplot(2,2,2);
-% plot(timestamps(1, 1:last_non_zero_index), qdotHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
-% hold on;
-% ax = gca; ax.ColorOrderIndex = 1;
-% plot(t, symQdotHist, ':', 'LineWidth', 1.5);
-% hold off;
-% xlabel('Time (s)');
-% ylabel('qdot (rad/s)');
-% title('Joint Velocities vs. Time');
-% legend('qdot1 ctrl', 'qdot2 ctrl', 'qdot3 ctrl', 'qdot4 ctrl', 'qdot1 sim', 'qdot2 sim', 'qdot3 sim', 'qdot4 sim');
-% grid on;
-
-% Subplot 3: End-Effector Position
+% End-Effector Position
 figure();
 plot(timestamps(1, 1:last_non_zero_index), xHist(:, 1:last_non_zero_index), 'LineWidth', 1.5);
 hold on;
@@ -114,7 +98,7 @@ title('End-Effector Position vs. Time');
 legend('Real x', 'Real y', 'Real z', 'Sim x', 'Sim y', 'Sim z');
 grid on;
 
-% Subplot 4: Position Error Norm
+% Position Error Norm
 figure();
 errHistNorm = vecnorm(errHist, 2, 1);
 symErrHistNorm = vecnorm(symerrHist, 2, 1);
@@ -130,9 +114,9 @@ legend('Real Error', 'Sim Error');
 grid on;
 
 
-figure();
-
+% Joint velocities
 % Joint 1
+figure();
 subplot(2,2,1);
 plot(timestamps(1,1:last_non_zero_index), qdotHist(1, 1:last_non_zero_index), 'LineWidth', 1.5); % controller
 hold on;
